@@ -1,0 +1,77 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/a2b5f516-ebfc-4d7c-b877-81060d95c2ec')]",
+      "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/a2b5f516-ebfc-4d7c-b877-81060d95c2ec')]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-02-01-preview",
+      "properties": {
+        "displayName": "SharePointFileOperation via devices with previously unseen user agents",
+        "description": "Identifies if the number of documents downloaded from device(s) associated\nwith a previously unseen user agent exceeds a threshold (default is 10).",
+        "alertDetailsOverride": null,
+        "customDetails": null,
+        "entityMappings": [
+          {
+            "entityType": "Account",
+            "fieldMappings": [
+              {
+                "columnName": "AccountCustomEntity",
+                "identifier": "FullName"
+              }
+            ]
+          },
+          {
+            "entityType": "IP",
+            "fieldMappings": [
+              {
+                "columnName": "IPCustomEntity",
+                "identifier": "Address"
+              }
+            ]
+          }
+        ],
+        "eventGroupingSettings": {
+          "aggregationKind": "SingleAlert"
+        },
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": [],
+            "groupByEntities": [],
+            "lookbackDuration": "PT5M",
+            "matchingMethod": "AllEntities",
+            "reopenClosedIncident": false
+          }
+        },
+        "query": "let threshold = 10;\nlet szSharePointFileOperation = \"SharePointFileOperation\";\nlet szOperations = dynamic([\"FileDownloaded\", \"FileUploaded\"]);\nlet historicalActivity =\nOfficeActivity\n| where TimeGenerated between(ago(14d)..ago(1d))\n| where RecordType =~ szSharePointFileOperation\n| where Operation in~ (szOperations)\n| summarize historicalCount = count() by UserAgent;\nlet recentActivity = OfficeActivity\n| where RecordType =~ szSharePointFileOperation\n| where Operation in~ (szOperations)\n| where TimeGenerated > ago(1d)\n| summarize recentCount = count() by UserAgent;\nrecentActivity | join kind = leftanti (historicalActivity) on UserAgent\n| project RecordType = szSharePointFileOperation, UserAgent, recentCount\n| order by recentCount asc, UserAgent\n// More than 10 downloads/uploads from a new user agent\n| where recentCount > threshold\n| join kind = rightsemi \n(OfficeActivity \n| where TimeGenerated >= ago(1d) \n| where RecordType =~ szSharePointFileOperation \n| where Operation in~ (szOperations)\n)\non UserAgent\n| summarize StartTimeUtc = min(TimeGenerated), EndTimeUtc = max(TimeGenerated), count() by RecordType, Operation, UserAgent, UserType, UserId, ClientIP, OfficeWorkload, Site_Url\n| extend timestamp = StartTimeUtc, AccountCustomEntity = UserId, IPCustomEntity = ClientIP\n| order by UserAgent asc, Operation asc, UserId asc",
+        "queryPeriod": "P14D",
+        "queryFrequency": "P1D",
+        "sentinelEntitiesMappings": null,
+        "severity": "Medium",
+        "suppressionDuration": "PT5H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "Exfiltration"
+        ],
+        "techniques": [
+          "T1030"
+        ],
+        "templateVersion": null,
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "alertRuleTemplateName": "5dd76a87-9f87-4576-bab3-268b0e2b338b",
+        "enabled": true
+      }
+    }
+  ]
+}
