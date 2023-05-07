@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/b07d8ee1-9b80-4e88-bfd4-cb58d92a626f')]",
+      "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/b07d8ee1-9b80-4e88-bfd4-cb58d92a626f')]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-02-01-preview",
+      "properties": {
+        "displayName": "Illegal Function Codes for ICS traffic (Microsoft Defender for IoT)",
+        "description": "This alert leverages Defender for IoT to detect Illegal function codes in SCADA equipment indicating improper application configuration or malicious activity such using illegal values within a protocol to exploit a PLC vulnerability.",
+        "alertDetailsOverride": {
+          "alertDescriptionFormat": "(MDIoT) {{Description}}",
+          "alertDisplayNameFormat": "(MDIoT) {{AlertName}}",
+          "alertDynamicProperties": null,
+          "alertSeverityColumnName": "AlertSeverity",
+          "alertTacticsColumnName": "Tactics"
+        },
+        "customDetails": {
+          "AlertManagementUri": "AlertManagementUri",
+          "Sensor": "DeviceId",
+          "AlertLink": "AlertLink",
+          "Protocol": "Protocol",
+          "VendorOriginalId": "VendorOriginalId"
+        },
+        "entityMappings": null,
+        "eventGroupingSettings": {
+          "aggregationKind": "AlertPerResult"
+        },
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "groupByAlertDetails": null,
+            "groupByCustomDetails": null,
+            "groupByEntities": [],
+            "lookbackDuration": "PT5M",
+            "matchingMethod": "AllEntities",
+            "reopenClosedIncident": false
+          }
+        },
+        "query": "SecurityAlert\n| where ProductName == \"Azure Security Center for IoT\"\n| where AlertName == \"Function Code Not Supported by Outstation\"\nor AlertName == \"Illegal BACNet message\"\nor AlertName == \"Illegal Connection Attempt on Port 0\"\nor AlertName == \"Illegal DNP3 Operation\"\nor AlertName == \"Illegal MODBUS Operation (Exception Raised by Master)\"\nor AlertName == \"Illegal MODBUS Operation (Function Code Zero)\"\nor AlertName == \"Incorrect Parameter Sent to Outstation\"\nor AlertName == \"Initiation of an Obsolete Function Code (Initialize Data)\"\nor AlertName == \"Initiation of an Obsolete Function Code (Save Config)\"\nor AlertName == \"Modbus Exception\"\nor AlertName == \"Unknown Object Sent to Outstation\"\nor AlertName == \"Usage of a Reserved Function Code\"\nor AlertName == \"Usage of Improper Formatting by Outstation\"\nor AlertName == \"Usage of Reserved Status Flags (IIN)\"\nor AlertName == \"Unauthorized communication was detected by a User Defined Protocol Rule\"\nor AlertName == \"Unauthorized Operation was detected by a User Defined whitelist Alert\"\nor AlertName == \"Illegal Protocol Version\"\nor AlertName contains \"Slave Device Received Illegal\"\n| where TimeGenerated <= ProcessingEndTime + 60m\n| extend DeviceId = tostring(parse_json(ExtendedProperties).DeviceId)\n| extend SourceDeviceAddress = tostring(parse_json(ExtendedProperties).SourceDeviceAddress)\n| extend DestDeviceAddress = tostring(parse_json(ExtendedProperties).DestinationDeviceAddress)\n| extend RemediationSteps = tostring(parse_json(RemediationSteps)[0])\n| extend Protocol = tostring(parse_json(ExtendedProperties).Protocol)\n| extend AlertManagementUri = tostring(parse_json(ExtendedProperties).AlertManagementUri)\n| project\n  TimeGenerated,\n  DeviceId,\n  ProductName,\n  ProductComponentName,\n  AlertSeverity,\n  AlertName,\n  Description,\n  Protocol,\n  SourceDeviceAddress,\n  DestDeviceAddress,\n  RemediationSteps,\n  Tactics,\n  Entities,\n  VendorOriginalId,\n  AlertLink,\n  AlertManagementUri\n",
+        "queryPeriod": "PT1H",
+        "queryFrequency": "PT1H",
+        "sentinelEntitiesMappings": null,
+        "severity": "Medium",
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "CommandAndControl"
+        ],
+        "techniques": [],
+        "templateVersion": null,
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "alertRuleTemplateName": null,
+        "enabled": true
+      }
+    }
+  ]
+}
