@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/3071fe0c-615f-4600-a32a-3b33abbed5bb')]",
+      "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/3071fe0c-615f-4600-a32a-3b33abbed5bb')]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "MicrosoftSecurityIncidentCreation",
+      "apiVersion": "2023-02-01-preview",
+      "properties": {
+        "displayName": "Create incidents based on Azure Security Center alerts",
+        "description": "Create incidents based on all alerts generated in Azure Security Center",
+        "displayNamesExcludeFilter": null,
+        "displayNamesFilter": null,
+        "productFilter": "Azure Security Center",
+        "severitiesFilter": null,
+        "alertRuleTemplateName": "90586451-7ba8-4c1e-9904-7d1b7c3cc4d6",
+        "enabled": true
+      }
+    }
+  ]
+}
