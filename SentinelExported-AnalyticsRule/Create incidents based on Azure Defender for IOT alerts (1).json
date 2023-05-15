@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/11dd009e-b144-4e9e-a46b-0d0713a24cce')]",
+      "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/11dd009e-b144-4e9e-a46b-0d0713a24cce')]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "MicrosoftSecurityIncidentCreation",
+      "apiVersion": "2023-02-01-preview",
+      "properties": {
+        "displayName": "Create incidents based on Azure Defender for IOT alerts",
+        "description": "Create incidents based on all alerts generated in Azure Defender for IOT",
+        "displayNamesExcludeFilter": null,
+        "displayNamesFilter": null,
+        "productFilter": "Azure Security Center for IoT",
+        "severitiesFilter": null,
+        "alertRuleTemplateName": "a2e0eb51-1f11-461a-999b-cd0ebe5c7a72",
+        "enabled": true
+      }
+    }
+  ]
+}
