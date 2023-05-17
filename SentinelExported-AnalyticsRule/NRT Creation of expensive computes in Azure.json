@@ -1,0 +1,69 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/3d2ee62e-7900-48e2-af1a-811d60208d5b')]",
+      "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/3d2ee62e-7900-48e2-af1a-811d60208d5b')]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "NRT",
+      "apiVersion": "2023-02-01-preview",
+      "properties": {
+        "displayName": "NRT Creation of expensive computes in Azure",
+        "description": "Identifies the creation of large size/expensive VMs (GPU or with large no of virtual CPUs) in Azure.\nAdversary may create new or update existing virtual machines sizes to evade defenses \nor use it for cryptomining purposes.\nFor Windows/Linux Vm Sizes - https://docs.microsoft.com/azure/virtual-machines/windows/sizes \nAzure VM Naming Conventions - https://docs.microsoft.com/azure/virtual-machines/vm-naming-conventions",
+        "alertDetailsOverride": null,
+        "customDetails": null,
+        "entityMappings": [
+          {
+            "entityType": "Account",
+            "fieldMappings": [
+              {
+                "columnName": "AccountCustomEntity",
+                "identifier": "FullName"
+              }
+            ]
+          },
+          {
+            "entityType": "IP",
+            "fieldMappings": [
+              {
+                "columnName": "IPCustomEntity",
+                "identifier": "Address"
+              }
+            ]
+          }
+        ],
+        "eventGroupingSettings": null,
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": [],
+            "groupByEntities": [],
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "reopenClosedIncident": false
+          }
+        },
+        "query": "let tokens = dynamic([\"416\",\"208\",\"128\",\"120\",\"96\",\"80\",\"72\",\"64\",\"48\",\"44\",\"40\",\"g5\",\"gs5\",\"g4\",\"gs4\",\"nc12\",\"nc24\",\"nv12\"]);\nlet operationList = dynamic([\"microsoft.compute/virtualmachines/write\", \"microsoft.resources/deployments/write\"]);\nAzureActivity\n| where tolower(OperationNameValue) in (operationList)\n| where ActivityStatusValue == \"Accepted\" \n| where isnotempty(Properties)\n| extend vmSize = tolower(tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(Properties).responseBody)).properties)).hardwareProfile)).vmSize))\n| where isnotempty(vmSize)\n| where vmSize has_any (tokens) \n| extend ComputerName = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(Properties).responseBody)).properties)).osProfile)).computerName)\n| extend clientIpAddress = tostring(parse_json(HTTPRequest).clientIpAddress)\n| project TimeGenerated, OperationNameValue, ActivityStatusValue, Caller, CallerIpAddress, ComputerName, vmSize\n| extend timestamp = TimeGenerated, AccountCustomEntity = Caller, IPCustomEntity = CallerIpAddress\n",
+        "sentinelEntitiesMappings": null,
+        "severity": "Medium",
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "DefenseEvasion"
+        ],
+        "techniques": [],
+        "templateVersion": "2.0.0",
+        "alertRuleTemplateName": "56fe0db0-6779-46fa-b3c5-006082a53064",
+        "enabled": true
+      }
+    }
+  ]
+}
