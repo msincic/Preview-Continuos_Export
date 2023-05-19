@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/9ec11b70-4331-41b7-b206-e91a71044b57')]",
+      "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/9ec11b70-4331-41b7-b206-e91a71044b57')]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-02-01-preview",
+      "properties": {
+        "displayName": "Denial of Service (Microsoft Defender for IoT)",
+        "description": "This alert leverages Defender for IoT to detect attacks that would prevent the use or proper operation of a DCS system including Denial of Service events.",
+        "alertDetailsOverride": {
+          "alertDescriptionFormat": "(MDIoT) {{Description}}",
+          "alertDisplayNameFormat": "(MDIoT) {{AlertName}}",
+          "alertDynamicProperties": null,
+          "alertSeverityColumnName": "AlertSeverity",
+          "alertTacticsColumnName": "Tactics"
+        },
+        "customDetails": {
+          "AlertManagementUri": "AlertManagementUri",
+          "Sensor": "DeviceId",
+          "AlertLink": "AlertLink",
+          "Protocol": "Protocol",
+          "VendorOriginalId": "VendorOriginalId"
+        },
+        "entityMappings": null,
+        "eventGroupingSettings": {
+          "aggregationKind": "AlertPerResult"
+        },
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "groupByAlertDetails": null,
+            "groupByCustomDetails": null,
+            "groupByEntities": [],
+            "lookbackDuration": "PT5M",
+            "matchingMethod": "AllEntities",
+            "reopenClosedIncident": false
+          }
+        },
+        "query": "SecurityAlert\n| where ProductName == \"Azure Security Center for IoT\"\n| where AlertName == \"Suspicion of Denial Of Service Attack\"\n| where TimeGenerated <= ProcessingEndTime + 60m\n| extend DeviceId = tostring(parse_json(ExtendedProperties).DeviceId)\n| extend SourceDeviceAddress = tostring(parse_json(ExtendedProperties).SourceDeviceAddress)\n| extend DestDeviceAddress = tostring(parse_json(ExtendedProperties).DestinationDeviceAddress)\n| extend RemediationSteps = tostring(parse_json(RemediationSteps)[0])\n| extend Protocol = tostring(parse_json(ExtendedProperties).Protocol)\n| extend AlertManagementUri = tostring(parse_json(ExtendedProperties).AlertManagementUri)\n| project\n  TimeGenerated,\n  DeviceId,\n  ProductName,\n  ProductComponentName,\n  AlertSeverity,\n  AlertName,\n  Description,\n  Protocol,\n  SourceDeviceAddress,\n  DestDeviceAddress,\n  RemediationSteps,\n  Tactics,\n  Entities,\n  VendorOriginalId,\n  AlertLink,\n  AlertManagementUri\n",
+        "queryPeriod": "PT5M",
+        "queryFrequency": "PT5M",
+        "sentinelEntitiesMappings": null,
+        "severity": "High",
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "Impact"
+        ],
+        "techniques": [],
+        "templateVersion": null,
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "alertRuleTemplateName": null,
+        "enabled": true
+      }
+    }
+  ]
+}
