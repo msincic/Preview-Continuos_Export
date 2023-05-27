@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/b5733eeb-d52c-436d-8c0f-5ae8c3ec44b0')]",
+      "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/b5733eeb-d52c-436d-8c0f-5ae8c3ec44b0')]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-02-01-preview",
+      "properties": {
+        "displayName": "Unauthorized device in the network (Microsoft Defender for IoT)",
+        "description": "This alert leverages Defender for IoT to detect a new device indicating a legitimate device recently installed on the network or an indication of malicious activity such as a cyber threat attempting to manipulate the SCADA network.",
+        "alertDetailsOverride": {
+          "alertDescriptionFormat": "(MDIoT) {{Description}}",
+          "alertDisplayNameFormat": "(MDIoT) {{AlertName}}",
+          "alertDynamicProperties": null,
+          "alertSeverityColumnName": "AlertSeverity",
+          "alertTacticsColumnName": "Tactics"
+        },
+        "customDetails": {
+          "AlertManagementUri": "AlertManagementUri",
+          "Sensor": "DeviceId",
+          "AlertLink": "AlertLink",
+          "Protocol": "Protocol",
+          "VendorOriginalId": "VendorOriginalId"
+        },
+        "entityMappings": null,
+        "eventGroupingSettings": {
+          "aggregationKind": "AlertPerResult"
+        },
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "groupByAlertDetails": null,
+            "groupByCustomDetails": null,
+            "groupByEntities": [],
+            "lookbackDuration": "PT5M",
+            "matchingMethod": "AllEntities",
+            "reopenClosedIncident": false
+          }
+        },
+        "query": "SecurityAlert\n| where ProductName == \"Azure Security Center for IoT\"\n| where AlertName == \"Field Device Discovered Unexpectedly\" \nor AlertName == \"New Asset Detected\" \nor AlertName == \"Abnormal usage of MAC Addresses\" \nor AlertName == \"New LLDP Device Configuration\"\n| where TimeGenerated <= ProcessingEndTime + 60m\n| extend DeviceId = tostring(parse_json(ExtendedProperties).DeviceId)\n| extend SourceDeviceAddress = tostring(parse_json(ExtendedProperties).SourceDeviceAddress)\n| extend DestDeviceAddress = tostring(parse_json(ExtendedProperties).DestinationDeviceAddress)\n| extend RemediationSteps = tostring(parse_json(RemediationSteps)[0])\n| extend Protocol = tostring(parse_json(ExtendedProperties).Protocol)\n| extend AlertManagementUri = tostring(parse_json(ExtendedProperties).AlertManagementUri)\n| project\n  TimeGenerated,\n  DeviceId,\n  ProductName,\n  ProductComponentName,\n  AlertSeverity,\n  AlertName,\n  Description,\n  Protocol,\n  SourceDeviceAddress,\n  DestDeviceAddress,\n  RemediationSteps,\n  Tactics,\n  Entities,\n  VendorOriginalId,\n  AlertLink,\n  AlertManagementUri\n",
+        "queryPeriod": "PT1H",
+        "queryFrequency": "PT1H",
+        "sentinelEntitiesMappings": null,
+        "severity": "Medium",
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "Execution"
+        ],
+        "techniques": [],
+        "templateVersion": null,
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "alertRuleTemplateName": null,
+        "enabled": true
+      }
+    }
+  ]
+}
