@@ -1,0 +1,64 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/442843a7-c395-4b1b-b72a-8905f2900d80')]",
+      "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/442843a7-c395-4b1b-b72a-8905f2900d80')]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-02-01-preview",
+      "properties": {
+        "displayName": "(Preview) ZeroTrust(TIC3.0) Files Control Family Monitoring",
+        "description": "Zero Trust(TIC3.0) Control Assessments have Deviated from Configured Threshold Baselines",
+        "alertDetailsOverride": null,
+        "customDetails": null,
+        "entityMappings": [
+          {
+            "entityType": "URL",
+            "fieldMappings": [
+              {
+                "columnName": "URLCustomEntity",
+                "identifier": "Url"
+              }
+            ]
+          }
+        ],
+        "eventGroupingSettings": null,
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "groupByAlertDetails": null,
+            "groupByCustomDetails": null,
+            "groupByEntities": [],
+            "lookbackDuration": "PT5M",
+            "matchingMethod": "AllEntities",
+            "reopenClosedIncident": false
+          }
+        },
+        "query": "let ZeroTrustTIC3Mapping = externaldata(RecommendationDisplayName:string,Capability:string,Family:string) [@\"https://raw.githubusercontent.com/Azure/Azure-Sentinel/master/Sample%20Data/Feeds/ZeroTrustTIC3Mapping.csv\"] with (format=\"csv\", ignoreFirstRecord=True);\nSecurityRecommendation\n  | join kind=rightouter ZeroTrustTIC3Mapping on RecommendationDisplayName\n  | where Family == 'Files'\n  | summarize\n      Assessments = count(),\n      Success = countif(RecommendationState == 'Healthy' or RecommendationState == 'NotApplicable' or RecommendationState == 'Removed'),\n      Failed = countif(RecommendationState == 'Unhealthy')\n      by Capability, Family, RecommendationDisplayName\n  | extend SuccessRatePercentage = (Success * 100 / Assessments)\n  | extend FailedRatePercentage = (Failed * 100 / Assessments)\n  | extend RemediationLink = strcat('https://portal.azure.com/#blade/Microsoft_Azure_Security/SecurityMenuBlade/22')\n  | project\n      Capability,\n      Family,\n      RecommendationDisplayName,\n      Assessments,\n      SuccessRatePercentage,\n      FailedRatePercentage,\n      RemediationLink\n  | where RecommendationDisplayName <> ''\n  // | where RecommendationName <> '' //Filter Out or Suppress Recommendations\n  | where FailedRatePercentage > 30 //Adjust Either FailedRatePercentage or PasedRatePercentage Thresholds within Organizational Needs\n  | sort by FailedRatePercentage desc\n  | limit 250\n  | extend URLCustomEntity = RemediationLink\n",
+        "queryPeriod": "P7D",
+        "queryFrequency": "P7D",
+        "sentinelEntitiesMappings": null,
+        "severity": "Medium",
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "Discovery"
+        ],
+        "techniques": null,
+        "templateVersion": null,
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "alertRuleTemplateName": null,
+        "enabled": true
+      }
+    }
+  ]
+}
