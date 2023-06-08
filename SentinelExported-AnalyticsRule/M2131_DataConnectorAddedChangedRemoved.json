@@ -1,0 +1,64 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/96b9eec3-537f-4c56-8a83-c1f53a16005f')]",
+      "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/96b9eec3-537f-4c56-8a83-c1f53a16005f')]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-02-01-preview",
+      "properties": {
+        "displayName": "M2131_DataConnectorAddedChangedRemoved",
+        "description": "This alert is designed to monitor data connector configurations. This alert is triggered when a data connector is added, updated, or deleted.",
+        "alertDetailsOverride": null,
+        "customDetails": null,
+        "entityMappings": [
+          {
+            "entityType": "AzureResource",
+            "fieldMappings": [
+              {
+                "columnName": "ResourceId",
+                "identifier": "ResourceId"
+              }
+            ]
+          }
+        ],
+        "eventGroupingSettings": null,
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "groupByAlertDetails": null,
+            "groupByCustomDetails": null,
+            "groupByEntities": [],
+            "lookbackDuration": "PT5M",
+            "matchingMethod": "AllEntities",
+            "reopenClosedIncident": false
+          }
+        },
+        "query": "AzureActivity\n| where OperationNameValue contains \"Microsoft.SecurityInsights/dataConnectors/\"\n| where ActivityStatusValue == \"Succeeded\"\n| project OperationNameValue, Caller, CallerIpAddress, ActivityStatusValue, ActivitySubstatusValue, ResourceGroup, Properties, ResourceId, TimeGenerated\n| sort by TimeGenerated desc\n| extend Account = Caller\n",
+        "queryPeriod": "P14D",
+        "queryFrequency": "P1D",
+        "sentinelEntitiesMappings": null,
+        "severity": "Medium",
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "Discovery"
+        ],
+        "techniques": [],
+        "templateVersion": null,
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "alertRuleTemplateName": null,
+        "enabled": true
+      }
+    }
+  ]
+}
