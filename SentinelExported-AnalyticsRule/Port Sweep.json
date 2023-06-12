@@ -1,0 +1,73 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/d9ef0c40-6ef3-4f6b-b028-36570cadb861')]",
+      "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/d9ef0c40-6ef3-4f6b-b028-36570cadb861')]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-02-01-preview",
+      "properties": {
+        "displayName": "Port Sweep",
+        "description": "Identifies a source IP scanning same open ports on the Azure Firewall IPs. This can indicate malicious scanning of port by an attacker, trying to reveal IPs with specific ports open in the organization. The ports can be compromised by attackers for initial access, most often by exploiting vulnerability.\n\nConfigurable Parameters:\n\n- Port sweep time - the time range to look for multiple hosts scanned. Default is set to 30 seconds.\n- Minimum different hosts threshold - alert only if more than this number of hosts scanned. Default is set to 200.",
+        "alertDetailsOverride": null,
+        "customDetails": null,
+        "entityMappings": [
+          {
+            "entityType": "IP",
+            "fieldMappings": [
+              {
+                "columnName": "IPCustomEntity",
+                "identifier": "Address"
+              }
+            ]
+          },
+          {
+            "entityType": "URL",
+            "fieldMappings": [
+              {
+                "columnName": "URLCustomEntity",
+                "identifier": "Url"
+              }
+            ]
+          }
+        ],
+        "eventGroupingSettings": null,
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "groupByAlertDetails": null,
+            "groupByCustomDetails": null,
+            "groupByEntities": [],
+            "lookbackDuration": "PT5M",
+            "matchingMethod": "AllEntities",
+            "reopenClosedIncident": false
+          }
+        },
+        "query": "let RunTime = 1h;\nlet StartRunTime = 1d;\nlet EndRunTime = StartRunTime - RunTime;\nlet MinimumDifferentHostsThreashold = 200;\nlet ExcludedPorts = dynamic([80, 443]);\nlet BinTime = 30s;\nAzureDiagnostics | where TimeGenerated  between (ago(StartRunTime) .. ago(EndRunTime)) | where OperationName == \"AzureFirewallApplicationRuleLog\" or OperationName == \"AzureFirewallNetworkRuleLog\" | parse msg_s with * \"from \" srcip \":\" srcport \" to \" dsturl \":\" dstport | where dstport !in (ExcludedPorts) | where isnotempty(dsturl) and isnotempty(srcip) and isnotempty(dstport) | summarize AlertTimedCountHostsInBinTime = dcount(dsturl) by srcip, bin(TimeGenerated, BinTime), dstport, dsturl | where AlertTimedCountHostsInBinTime > MinimumDifferentHostsThreashold | extend IPCustomEntity = srcip, URLCustomEntity = dsturl\n",
+        "queryPeriod": "PT1H",
+        "queryFrequency": "PT1H",
+        "sentinelEntitiesMappings": null,
+        "severity": "Medium",
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "Discovery"
+        ],
+        "techniques": [],
+        "templateVersion": null,
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 1,
+        "alertRuleTemplateName": null,
+        "enabled": true
+      }
+    }
+  ]
+}
