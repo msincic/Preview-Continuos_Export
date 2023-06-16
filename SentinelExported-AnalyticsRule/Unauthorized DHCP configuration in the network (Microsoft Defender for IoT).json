@@ -1,0 +1,88 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/cfee770b-3133-413b-ae7c-2834118a4f51')]",
+      "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/cfee770b-3133-413b-ae7c-2834118a4f51')]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-02-01-preview",
+      "properties": {
+        "displayName": "Unauthorized DHCP configuration in the network (Microsoft Defender for IoT)",
+        "description": "This alert leverages Defender for IoT to detect an unauthorized DHCP configuration indicating a possible unauthorized device configuration.",
+        "alertDetailsOverride": {
+          "alertDescriptionFormat": "(MDIoT) {{Description}}",
+          "alertDisplayNameFormat": "(MDIoT) {{AlertName}}",
+          "alertDynamicProperties": null,
+          "alertSeverityColumnName": "AlertSeverity",
+          "alertTacticsColumnName": "Tactics"
+        },
+        "customDetails": {
+          "Protocol": "Protocol",
+          "Sensor": "DeviceId"
+        },
+        "entityMappings": [
+          {
+            "entityType": "IP",
+            "fieldMappings": [
+              {
+                "columnName": "SourceDeviceAddress",
+                "identifier": "Address"
+              }
+            ]
+          },
+          {
+            "entityType": "IP",
+            "fieldMappings": [
+              {
+                "columnName": "DestDeviceAddress",
+                "identifier": "Address"
+              }
+            ]
+          }
+        ],
+        "eventGroupingSettings": {
+          "aggregationKind": "AlertPerResult"
+        },
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": true,
+            "groupByAlertDetails": [
+              "DisplayName"
+            ],
+            "groupByCustomDetails": null,
+            "groupByEntities": [
+              "IP"
+            ],
+            "lookbackDuration": "PT5M",
+            "matchingMethod": "Selected",
+            "reopenClosedIncident": false
+          }
+        },
+        "query": "SecurityAlert\n| where AlertName == \"Device Failed to Receive a Dynamic IP Address\"\n| extend DeviceId = tostring(parse_json(ExtendedProperties).DeviceId)\n| extend SourceDeviceAddress = tostring(parse_json(ExtendedProperties).SourceDeviceAddress)\n| extend DestDeviceAddress = tostring(parse_json(ExtendedProperties).DestinationDeviceAddress)\n| extend RemediationSteps = tostring(parse_json(RemediationSteps)[0])\n| extend Protocol = tostring(parse_json(ExtendedProperties).Protocol)\n| project\n  TimeGenerated,\n  DeviceId,\n  ProductName,\n  ProductComponentName,\n  AlertSeverity,\n  AlertName,\n  Description,\n  Protocol,\n  SourceDeviceAddress,\n  DestDeviceAddress,\n  RemediationSteps,\n  Tactics,\n  AlertLink\n",
+        "queryPeriod": "PT1H",
+        "queryFrequency": "PT1H",
+        "sentinelEntitiesMappings": null,
+        "severity": "Medium",
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "Impact"
+        ],
+        "techniques": [],
+        "templateVersion": null,
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "alertRuleTemplateName": null,
+        "enabled": true
+      }
+    }
+  ]
+}
