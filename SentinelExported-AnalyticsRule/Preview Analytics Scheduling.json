@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/123dbe6f-381f-4c5f-9f19-619e08e5527f')]",
+      "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/123dbe6f-381f-4c5f-9f19-619e08e5527f')]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-02-01-preview",
+      "properties": {
+        "displayName": "Preview Analytics Scheduling",
+        "description": "",
+        "alertDetailsOverride": null,
+        "customDetails": null,
+        "entityMappings": [
+          {
+            "entityType": "IP",
+            "fieldMappings": [
+              {
+                "columnName": "IPCustomEntity",
+                "identifier": "Address"
+              }
+            ]
+          }
+        ],
+        "eventGroupingSettings": {
+          "aggregationKind": "SingleAlert"
+        },
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": [],
+            "groupByEntities": [],
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "reopenClosedIncident": false
+          }
+        },
+        "query": "let queryfrequency = 1h;\r\nlet queryperiod = 1d;\r\nAuditLogs\r\n| where TimeGenerated > ago(queryfrequency)\r\n| where OperationName =~ \"Delete user\"\r\n//extend UserPrincipalName = tostring(TargetResources[0].userPrincipalName)\r\n| extend UserPrincipalName = extract(@'([a-f0-9]{32})?(.*)', 2, tostring(TargetResources[0].userPrincipalName))\r\n| extend DeletedByUser = tostring(InitiatedBy.user.userPrincipalName), DeletedByIPAddress = tostring(InitiatedBy.user.ipAddress)\r\n| extend DeletedByApp = tostring(InitiatedBy.app.displayName)\r\n| project Deletion_TimeGenerated = TimeGenerated, UserPrincipalName, DeletedByUser, DeletedByIPAddress, DeletedByApp, Deletion_AdditionalDetails = AdditionalDetails, Deletion_InitiatedBy = InitiatedBy, Deletion_TargetResources = TargetResources\r\n| join kind=inner (\r\n    AuditLogs\r\n    | where TimeGenerated > ago(queryperiod)\r\n    | where OperationName =~ \"Add user\"\r\n    | extend UserPrincipalName = tostring(TargetResources[0].userPrincipalName)\r\n    | project-rename Creation_TimeGenerated = TimeGenerated\r\n) on UserPrincipalName\r\n| extend TimeDelta = Deletion_TimeGenerated - Creation_TimeGenerated\r\n| where  TimeDelta between (time(0s) .. queryperiod)\r\n| extend CreatedByUser = tostring(InitiatedBy.user.userPrincipalName), CreatedByIPAddress = tostring(InitiatedBy.user.ipAddress)\r\n| extend CreatedByApp = tostring(InitiatedBy.app.displayName)\r\n| project Creation_TimeGenerated, Deletion_TimeGenerated, TimeDelta, UserPrincipalName, DeletedByUser, DeletedByIPAddress, DeletedByApp, CreatedByUser, CreatedByIPAddress, CreatedByApp, Creation_AdditionalDetails = AdditionalDetails, Creation_InitiatedBy = InitiatedBy, Creation_TargetResources = TargetResources, Deletion_AdditionalDetails, Deletion_InitiatedBy, Deletion_TargetResources\r\n| extend timestamp = Deletion_TimeGenerated, CustomAccountEntity = UserPrincipalName, IPCustomEntity = DeletedByIPAddress",
+        "queryPeriod": "P1D",
+        "queryFrequency": "PT5H",
+        "sentinelEntitiesMappings": null,
+        "severity": "Medium",
+        "suppressionDuration": "PT5H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "InitialAccess"
+        ],
+        "techniques": [
+          "T1078"
+        ],
+        "templateVersion": null,
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "alertRuleTemplateName": null,
+        "enabled": true
+      }
+    }
+  ]
+}
