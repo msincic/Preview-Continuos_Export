@@ -1,0 +1,74 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/d599cde3-cc57-4679-a340-ee3a855778e8')]",
+      "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/d599cde3-cc57-4679-a340-ee3a855778e8')]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-02-01-preview",
+      "properties": {
+        "displayName": "Multiple Sources Affected by the Same TI Destination",
+        "description": "Identifies multiple machines trying to reach out to the same destination blocked by TI in Azure Firewall. This can indicate attack on the organization by the same attack group.\n\nConfigurable Parameters:\n\n- Minimum affected threshold - alert only if more than this number of hosts affected. Default is set to 5.",
+        "alertDetailsOverride": null,
+        "customDetails": null,
+        "entityMappings": [
+          {
+            "entityType": "IP",
+            "fieldMappings": [
+              {
+                "columnName": "IPCustomEntity",
+                "identifier": "Address"
+              }
+            ]
+          },
+          {
+            "entityType": "URL",
+            "fieldMappings": [
+              {
+                "columnName": "URLCustomEntity",
+                "identifier": "Url"
+              }
+            ]
+          }
+        ],
+        "eventGroupingSettings": null,
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "groupByAlertDetails": null,
+            "groupByCustomDetails": null,
+            "groupByEntities": [],
+            "lookbackDuration": "PT5M",
+            "matchingMethod": "AllEntities",
+            "reopenClosedIncident": false
+          }
+        },
+        "query": "let RunTime = 1h; \nlet StartRunTime = 1d; \nlet EndRunTime = StartRunTime - RunTime; \nlet MinAffectedThershold = 5; \nAzureDiagnostics | where TimeGenerated  between (ago(StartRunTime) .. ago(EndRunTime))  | parse msg_s with * \"from \" srcip \":\" srcport \" to \" dsturl \":\" dstport  \".\" * \"ThreatIntel: \" ThreatIntel  | where OperationName == \"AzureFirewallThreatIntelLog\" | summarize TiTrafficCount = count(), dCountSourceIps = dcount(srcip), AffectedIps = make_set(srcip) by dsturl, ThreatIntel, srcip | where dCountSourceIps > MinAffectedThershold | order by TiTrafficCount desc | extend IPCustomEntity = srcip, URLCustomEntity = dsturl\n",
+        "queryPeriod": "PT1H",
+        "queryFrequency": "PT1H",
+        "sentinelEntitiesMappings": null,
+        "severity": "Medium",
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "Exfiltration",
+          "CommandAndControl"
+        ],
+        "techniques": [],
+        "templateVersion": null,
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 1,
+        "alertRuleTemplateName": null,
+        "enabled": true
+      }
+    }
+  ]
+}
