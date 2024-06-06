@@ -1,0 +1,29 @@
+name: MSDO windows-latest 
+on: 
+  push: 
+    branches: 
+      - main
+
+jobs: 
+  MSDO: 
+    name: Microsoft Security DevOps Analysis 
+
+    # MSDO runs on windows-latest. 
+    # ubuntu-latest also supported 
+    runs-on: windows-latest 
+
+    permissions: 
+      contents: read 
+      id-token: write 
+      actions: read 
+      security-events: write 
+
+    steps: 
+
+      # Checkout your code repository to scan 
+    - uses: actions/checkout@v3 
+
+      # Run analyzers 
+    - name: Run Microsoft Security DevOps Analysis 
+      uses: microsoft/security-devops-action@latest 
+      id: msdo 
